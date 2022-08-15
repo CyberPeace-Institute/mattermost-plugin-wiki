@@ -42,18 +42,8 @@ check-style: webapp/node_modules
 
 ifneq ($(HAS_WEBAPP),)
 	cd webapp && npm run lint
-	cd webapp && npm run check-types
 endif
 
-ifneq ($(HAS_SERVER),)
-	@if ! [ -x "$$(command -v golangci-lint)" ]; then \
-		echo "golangci-lint is not installed. Please see https://github.com/golangci/golangci-lint#install for installation instructions."; \
-		exit 1; \
-	fi; \
-
-	@echo Running golangci-lint
-	golangci-lint run ./...
-endif
 
 ## Builds the server, if it exists, for all supported architectures, unless MM_SERVICESETTINGS_ENABLEDEVELOPER is set.
 .PHONY: server
@@ -89,7 +79,7 @@ endif
 ## Ensures NPM dependencies are installed without having to run this all the time.
 webapp/node_modules: $(wildcard webapp/package.json)
 ifneq ($(HAS_WEBAPP),)
-	cd webapp && $(NPM) install
+	cd webapp && $(NPM) install -f
 	touch $@
 endif
 
@@ -219,7 +209,7 @@ ifneq ($(HAS_WEBAPP),)
 ifeq ($(HAS_MM_UTILITIES),)
 	@echo "You must clone github.com/mattermost/mattermost-utilities repo in .. to use this command"
 else
-	cd $(MM_UTILITIES_DIR) && npm install && npm run babel && node mmjstool/build/index.js i18n extract-webapp --webapp-dir $(PWD)/webapp
+	cd $(MM_UTILITIES_DIR) && npm install -f && npm run babel && node mmjstool/build/index.js i18n extract-webapp --webapp-dir $(PWD)/webapp
 endif
 endif
 

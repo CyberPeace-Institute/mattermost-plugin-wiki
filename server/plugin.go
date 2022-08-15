@@ -1,11 +1,21 @@
 package main
 
 import (
-	"fmt"
+	"github.com/mattermost/mattermost-plugin-wiki/server/app"
+	"github.com/pkg/errors"
 	"net/http"
 	"sync"
 
 	"github.com/mattermost/mattermost-server/v6/plugin"
+
+	"github.com/mattermost/mattermost-plugin-wiki/server/api"
+	"github.com/mattermost/mattermost-plugin-wiki/server/bot"
+	"github.com/mattermost/mattermost-plugin-wiki/server/sqlstore"
+
+	"github.com/sirupsen/logrus"
+
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/cluster"
 )
 
 // Plugin implements the interface expected by the Mattermost server to communicate between the server and plugin processes.
@@ -18,11 +28,60 @@ type Plugin struct {
 	// configuration is the active plugin configuration. Consult getConfiguration and
 	// setConfiguration for usage.
 	configuration *configuration
+
+	handler         *api.Handler
+	wikiDocsService app.WikiDocService
+	permissions     *app.PermissionsService
+
+	bot       *bot.Bot
+	pluginAPI *pluginapi.Client
 }
 
-// ServeHTTP demonstrates a plugin that handles HTTP requests by greeting the world.
+// ServeHTTP routes incoming HTTP requests to the plugin's REST API.
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Hello, world!")
+	p.handler.ServeHTTP(w, r)
+}
+
+// OnActivate Called when this plugin is activated.
+func (p *Plugin) OnActivate() error {
+	pluginAPIClient := pluginapi.NewClient(p.API, p.Driver)
+	p.pluginAPI = pluginAPIClient
+
+	pluginapi.ConfigureLogrus(logrus.New(), pluginAPIClient)
+
+	apiClient := sqlstore.NewClient(pluginAPIClient)
+	p.bot = bot.New(pluginAPIClient, "no id")
+
+	sqlStore, err := sqlstore.New(apiClient, p.bot)
+	if err != nil {
+		return errors.Wrapf(err, "failed creating the SQL store")
+	}
+
+	wikiDocStore := sqlstore.NewWikiDocStore(apiClient, p.bot, sqlStore)
+
+	p.wikiDocsService = app.NewWikiDocService(wikiDocStore, p.bot, pluginAPIClient)
+
+	p.permissions = app.NewPermissionsService(p.wikiDocsService, pluginAPIClient)
+
+	mutex, err := cluster.NewMutex(p.API, "CPI_dbMutex")
+	if err != nil {
+		return errors.Wrapf(err, "failed creating cluster mutex")
+	}
+	mutex.Lock()
+	if err = sqlStore.RunMigrations(); err != nil {
+		mutex.Unlock()
+		return errors.Wrapf(err, "failed to run migrations")
+	}
+	mutex.Unlock()
+
+	api.NewWikiDocHandler(
+		p.handler.APIRouter,
+		p.wikiDocsService,
+		p.permissions,
+		pluginAPIClient,
+		p.bot,
+	)
+	return nil
 }
 
 // See https://developers.mattermost.com/extend/plugins/server/reference/
