@@ -23,7 +23,6 @@ const config = {
             allExtensions: true,
             isTSX: true,
         }],
-        ['@emotion/babel-preset-css-prop'],
     ],
     plugins: [
         '@babel/plugin-proposal-class-properties',
@@ -31,8 +30,29 @@ const config = {
         '@babel/proposal-object-rest-spread',
         '@babel/plugin-proposal-optional-chaining',
         'babel-plugin-typescript-to-proptypes',
+        'babel-plugin-add-react-displayname',
+        [
+            'babel-plugin-styled-components',
+            {
+                ssr: false,
+                fileName: false,
+            },
+        ],
+        [
+            'formatjs',
+            {
+                idInterpolationPattern: '[sha512:contenthash:base64:6]',
+                ast: true,
+            },
+        ],
     ],
 };
+
+const NPM_TARGET = process.env.npm_lifecycle_event; //eslint-disable-line no-process-env
+const targetIsDevServer = NPM_TARGET === 'dev-server';
+if (targetIsDevServer) {
+    config.plugins.push(require.resolve('react-refresh/babel'));
+}
 
 // Jest needs module transformation
 config.env = {
