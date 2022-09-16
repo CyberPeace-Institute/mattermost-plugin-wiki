@@ -35,7 +35,7 @@ var migrations = []Migration{
 					CREATE TABLE IF NOT EXISTS CPI_WikiDocs (
 						ID VARCHAR(26) PRIMARY KEY,
 						Name VARCHAR(1024) NOT NULL,
-						Content VARCHAR(32765) NOT NULL,
+						Content TEXT NOT NULL,
 						Description VARCHAR(4096) NOT NULL,
 						Status VARCHAR(26) NOT NULL,
 						OwnerUserID VARCHAR(26) NOT NULL,
@@ -44,7 +44,7 @@ var migrations = []Migration{
 						CreateAt BIGINT NOT NULL,
 						UpdateAt BIGINT NOT NULL DEFAULT 0,
 						DeleteAt BIGINT NOT NULL DEFAULT 0,
-						INDEX CPI_WikiDocs_TeamID (TeamID)
+						INDEX CPI_WikiDocs_TeamID (TeamID),
 						INDEX CPI_WikiDocs_ChannelID (ChannelID)
 					)
 				` + MySQLCharset); err != nil {

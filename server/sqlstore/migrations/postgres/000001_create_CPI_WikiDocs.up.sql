@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS CPI_WikiDocs (
+    ID TEXT PRIMARY KEY,
+    Name TEXT NOT NULL,
+    Content TEXT NOT NULL,
+    Description TEXT NOT NULL,
+    Status TEXT NOT NULL,
+    OwnerUserID TEXT NOT NULL,
+    TeamID TEXT NOT NULL,
+    ChannelID TEXT NOT NULL,
+    CreateAt BIGINT NOT NULL,
+    UpdateAt BIGINT NOT NULL DEFAULT 0,
+    DeleteAt BIGINT NOT NULL DEFAULT 0
+)
