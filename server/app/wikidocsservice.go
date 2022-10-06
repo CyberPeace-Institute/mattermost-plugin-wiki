@@ -15,7 +15,7 @@ type wikiDocsService struct {
 	logger bot.Logger
 }
 
-// WikiDocService is the wikiDoc service for managing playbooks
+// WikiDocService is the wikiDoc service for managing wikiDocs
 // userID is the user initiating the event.
 type WikiDocService interface {
 	// Get retrieves a wikiDoc. Returns ErrNotFound if not found.
@@ -24,10 +24,10 @@ type WikiDocService interface {
 	// Create creates a new wikiDoc
 	Create(wikiDoc WikiDoc) (string, error)
 
-	// GetPlaybooks retrieves all wikiDocs
+	// GetWikiDocs retrieves all wikiDocs
 	GetWikiDocs(requesterInfo RequesterInfo, opts WikiDocFilterOptions) (*GetWikiDocsResults, error)
 
-	// GetWikiDocsForChannel retrieves all playbooks on the specified channel given the provided options
+	// GetWikiDocsForChannel retrieves all wikiDocs on the specified channel given the provided options
 	//GetWikiDocsForChannel(requesterInfo RequesterInfo, channelID string, opts WikiDocFilterOptions) (GetWikiDocsResults, error)
 
 	// Update updates a wikiDoc
@@ -37,13 +37,13 @@ type WikiDocService interface {
 	Duplicate(wikiDoc WikiDoc, userID string) (string, error)
 }
 
-// DialogFieldPlaybookIDKey is the key for the playbook ID field used in OpenCreatePlaybookRunDialog.
-const DialogFieldPlaybookIDKey = "playbookID"
+// DialogFieldWikiDocIDKey is the key for the wikiDoc ID field used in OpenCreateWikiDocRunDialog.
+const DialogFieldWikiDocIDKey = "wikiDocID"
 
-// DialogFieldNameKey is the key for the playbook run name field used in OpenCreatePlaybookRunDialog.
-const DialogFieldNameKey = "playbookRunName"
+// DialogFieldNameKey is the key for the wikiDoc run name field used in OpenCreateWikiDocRunDialog.
+const DialogFieldNameKey = "wikiDocName"
 
-// DialogFieldDescriptionKey is the key for the description textarea field used in UpdatePlaybookRunDialog
+// DialogFieldDescriptionKey is the key for the description textarea field used in UpdateWikiDocRunDialog
 const DialogFieldDescriptionKey = "description"
 
 func NewWikiDocService(store WikiDocStore, logger bot.Logger, api *pluginapi.Client) WikiDocService {
@@ -54,15 +54,15 @@ func NewWikiDocService(store WikiDocStore, logger bot.Logger, api *pluginapi.Cli
 	}
 }
 
-func (s *wikiDocsService) Create(playbook WikiDoc) (string, error) {
-	playbook.CreateAt = model.GetMillis()
-	playbook.UpdateAt = playbook.CreateAt
+func (s *wikiDocsService) Create(wikiDoc WikiDoc) (string, error) {
+	wikiDoc.CreateAt = model.GetMillis()
+	wikiDoc.UpdateAt = wikiDoc.CreateAt
 
-	newID, err := s.store.Create(playbook)
+	newID, err := s.store.Create(wikiDoc)
 	if err != nil {
 		return "", err
 	}
-	playbook.ID = newID
+	wikiDoc.ID = newID
 
 	return newID, nil
 }
@@ -74,7 +74,7 @@ func (s *wikiDocsService) Get(id string) (WikiDoc, error) {
 func (s *wikiDocsService) GetWikiDocs(requesterInfo RequesterInfo, options WikiDocFilterOptions) (*GetWikiDocsResults, error) {
 	results, err := s.store.GetWikiDocs(requesterInfo, options)
 	if err != nil {
-		return nil, errors.Wrap(err, "can't get playbook runs from the store")
+		return nil, errors.Wrap(err, "can't get wikiDoc runs from the store")
 	}
 	return &GetWikiDocsResults{
 		TotalCount: results.TotalCount,
@@ -84,14 +84,14 @@ func (s *wikiDocsService) GetWikiDocs(requesterInfo RequesterInfo, options WikiD
 	}, nil
 }
 
-func (s *wikiDocsService) Update(playbook WikiDoc) error {
-	if playbook.DeleteAt != 0 {
-		return errors.New("cannot update a playbook that is archived")
+func (s *wikiDocsService) Update(wikiDoc WikiDoc) error {
+	if wikiDoc.DeleteAt != 0 {
+		return errors.New("cannot update a wikiDoc that is archived")
 	}
 
-	playbook.UpdateAt = model.GetMillis()
+	wikiDoc.UpdateAt = model.GetMillis()
 
-	if err := s.store.Update(playbook); err != nil {
+	if err := s.store.Update(wikiDoc); err != nil {
 		return err
 	}
 

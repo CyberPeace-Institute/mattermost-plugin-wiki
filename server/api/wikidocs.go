@@ -53,6 +53,7 @@ func NewWikiDocHandler(
 	wikiDocRouterAuthorized := wikiDocRouter.PathPrefix("").Subrouter()
 	wikiDocRouterAuthorized.Use(handler.checkEditPermissions)
 	wikiDocRouterAuthorized.HandleFunc("", handler.updateWikiDoc).Methods(http.MethodPatch)
+	wikiDocRouterAuthorized.HandleFunc("/content", handler.content).Methods(http.MethodPost)
 	wikiDocRouterAuthorized.HandleFunc("/status", handler.status).Methods(http.MethodPost)
 
 	//channelRouter := wikiDocsRouter.PathPrefix("/channel").Subrouter()
@@ -88,7 +89,7 @@ func (h *WikiDocHandler) updateWikiDoc(w http.ResponseWriter, r *http.Request) {
 
 	var wikiDoc app.WikiDoc
 	if err := json.NewDecoder(r.Body).Decode(&wikiDoc); err != nil {
-		h.HandleErrorWithCode(w, http.StatusBadRequest, "unable to decode playbook", err)
+		h.HandleErrorWithCode(w, http.StatusBadRequest, "unable to decode wikiDoc", err)
 		return
 	}
 
@@ -136,7 +137,7 @@ func (h *WikiDocHandler) createWikiDocFromDialog(w http.ResponseWriter, r *http.
 		name = rawName
 	}
 
-	if rawDescription, ok := request.Submission[app.DialogFieldNameKey].(string); ok {
+	if rawDescription, ok := request.Submission[app.DialogFieldDescriptionKey].(string); ok {
 		description = rawDescription
 	}
 
@@ -282,21 +283,21 @@ func (h *WikiDocHandler) getWikiDoc(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	wikiDocID := vars["id"]
 
-	playbookRunToGet, err := h.wikiDocService.Get(wikiDocID)
+	wikiDocRunToGet, err := h.wikiDocService.Get(wikiDocID)
 	if err != nil {
 		h.HandleError(w, err)
 		return
 	}
 
-	ReturnJSON(w, playbookRunToGet, http.StatusOK)
+	ReturnJSON(w, wikiDocRunToGet, http.StatusOK)
 }
 
-// updateStatusD handles the POST /doc/{id}/status endpoint, user has edit permissions
-func (h *WikiDocHandler) status(w http.ResponseWriter, r *http.Request) {
+// content handles the POST /doc/{id}/content endpoint, user has edit permissions
+func (h *WikiDocHandler) content(w http.ResponseWriter, r *http.Request) {
 	wikiDocID := mux.Vars(r)["id"]
 	userID := r.Header.Get("Mattermost-User-ID")
 
-	playbookRunToModify, err := h.wikiDocService.Get(wikiDocID)
+	wikiDocToModify, err := h.wikiDocService.Get(wikiDocID)
 	if err != nil {
 		h.HandleError(w, err)
 		return
@@ -304,9 +305,47 @@ func (h *WikiDocHandler) status(w http.ResponseWriter, r *http.Request) {
 
 	isGuest, _ := app.IsGuest(userID, h.pluginAPI)
 
-	if (!app.IsSystemAdmin(userID, h.pluginAPI) && !app.CanPostToChannel(userID, playbookRunToModify.ChannelID, h.pluginAPI)) ||
+	if (!app.IsSystemAdmin(userID, h.pluginAPI) && !app.CanPostToChannel(userID, wikiDocToModify.ChannelID, h.pluginAPI)) ||
 		isGuest {
-		h.HandleErrorWithCode(w, http.StatusForbidden, "Not authorized", fmt.Errorf("user %s cannot post to wiki doc channel %s", userID, playbookRunToModify.ChannelID))
+		h.HandleErrorWithCode(w, http.StatusForbidden, "Not authorized", fmt.Errorf("user %s cannot post to wiki doc channel %s", userID, wikiDocToModify.ChannelID))
+		return
+	}
+
+	var options map[string]string
+
+	if err = json.NewDecoder(r.Body).Decode(&options); err != nil {
+		h.HandleErrorWithCode(w, http.StatusBadRequest, "unable to decode body into StatusUpdateOptions", err)
+		return
+	}
+
+	wikiDocToModify.Content = options["content"]
+
+	err = h.wikiDocService.Update(wikiDocToModify)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"status":"OK"}`))
+}
+
+// updateStatusD handles the POST /doc/{id}/status endpoint, user has edit permissions
+func (h *WikiDocHandler) status(w http.ResponseWriter, r *http.Request) {
+	wikiDocID := mux.Vars(r)["id"]
+	userID := r.Header.Get("Mattermost-User-ID")
+
+	wikiDocToModify, err := h.wikiDocService.Get(wikiDocID)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	isGuest, _ := app.IsGuest(userID, h.pluginAPI)
+
+	if (!app.IsSystemAdmin(userID, h.pluginAPI) && !app.CanPostToChannel(userID, wikiDocToModify.ChannelID, h.pluginAPI)) ||
+		isGuest {
+		h.HandleErrorWithCode(w, http.StatusForbidden, "Not authorized", fmt.Errorf("user %s cannot post to wiki doc channel %s", userID, wikiDocToModify.ChannelID))
 		return
 	}
 
@@ -319,6 +358,14 @@ func (h *WikiDocHandler) status(w http.ResponseWriter, r *http.Request) {
 
 	if !app.ValidStatus(options["status"]) {
 		h.HandleErrorWithCode(w, http.StatusBadRequest, "invalid status provided", err)
+	}
+
+	wikiDocToModify.Status = options["status"]
+
+	err = h.wikiDocService.Update(wikiDocToModify)
+	if err != nil {
+		h.HandleError(w, err)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

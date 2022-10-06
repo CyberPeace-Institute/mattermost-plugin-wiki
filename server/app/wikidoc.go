@@ -12,7 +12,7 @@ const (
 )
 
 type WikiDoc struct {
-	// ID is the unique identifier of the playbook run.
+	// ID is the unique identifier of the wikiDoc.
 	ID string `json:"id" export:"-"`
 
 	// Name is the name of the doc.
@@ -24,16 +24,16 @@ type WikiDoc struct {
 	// Description is field for describing the doc.
 	Description string `json:"description" export:"description"`
 
-	// It can be StatusPrivate ("InProgress") or StatusPublished ("Published")
+	// It can be StatusPrivate ("Private") or StatusPublished ("Published")
 	Status string `json:"status" export:"status"`
 
-	// OwnerUserID is the user identifier of the playbook run's owner.
+	// OwnerUserID is the user identifier of the wikiDoc's owner.
 	OwnerUserID string `json:"owner_user_id" export:"-"`
 
-	// TeamID is the identifier of the team the playbook run lives in.
+	// TeamID is the identifier of the team the wikiDoc lives in.
 	TeamID string `json:"team_id" export:"-"`
 
-	// ChannelID is the identifier of the playbook run's channel.
+	// ChannelID is the identifier of the wikiDoc's channel.
 	ChannelID string `json:"channel_id" export:"-"`
 
 	CreateAt int64 `json:"create_at" export:"-"`
@@ -41,21 +41,21 @@ type WikiDoc struct {
 	DeleteAt int64 `json:"delete_at" export:"-"`
 }
 
-// PlaybookStore is an interface for storing playbooks
+// WikiDocStore is an interface for storing wikiDocs
 type WikiDocStore interface {
-	// Get retrieves a playbook
+	// Get retrieves a wikiDoc
 	Get(id string) (WikiDoc, error)
 
-	// Create creates a new playbook
-	Create(playbook WikiDoc) (string, error)
+	// Create creates a new wikiDoc
+	Create(wikiDoc WikiDoc) (string, error)
 
-	// GetWikiDocs retrieves all playbooks
+	// GetWikiDocs retrieves all wikiDocs
 	GetWikiDocs(requesterInfo RequesterInfo, options WikiDocFilterOptions) (*GetWikiDocsResults, error)
 
-	// Update updates a playbook
-	Update(playbook WikiDoc) error
+	// Update updates a wikiDoc
+	Update(wikiDoc WikiDoc) error
 
-	// Archive archives a playbook
+	// Archive archives a wikiDoc
 	Archive(id string) error
 }
 
@@ -93,12 +93,12 @@ type WikiDocFilterOptions struct {
 }
 
 func (o *WikiDocFilterOptions) Clone() WikiDocFilterOptions {
-	newPlaybookRunFilterOptions := *o
+	newWikiDocRunFilterOptions := *o
 	if len(o.Statuses) > 0 {
-		newPlaybookRunFilterOptions.Statuses = append([]string{}, o.Statuses...)
+		newWikiDocRunFilterOptions.Statuses = append([]string{}, o.Statuses...)
 	}
 
-	return newPlaybookRunFilterOptions
+	return newWikiDocRunFilterOptions
 }
 
 // Validate returns a new, validated filter options or returns an error if invalid.
@@ -148,7 +148,7 @@ func (o WikiDocFilterOptions) Validate() (WikiDocFilterOptions, error) {
 
 	for _, s := range options.Statuses {
 		if !ValidStatus(s) {
-			return WikiDocFilterOptions{}, errors.New("bad parameter in 'statuses': must be InProgress or Finished")
+			return WikiDocFilterOptions{}, errors.New("bad parameter in 'statuses': must be Private or Published")
 		}
 	}
 

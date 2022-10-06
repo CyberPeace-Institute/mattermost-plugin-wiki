@@ -8,13 +8,13 @@ var ErrNotFound = errors.New("not found")
 // ErrChannelDisplayNameInvalid is used when a channel name is too long.
 var ErrChannelDisplayNameInvalid = errors.New("channel name is invalid or too long")
 
-// ErrPlaybookRunNotActive occurs when trying to run a command on a playbook run that has ended.
+// ErrWikiDocNotActive occurs when trying to run a command on a wikiDoc run that has ended.
 var ErrWikiDocNotActive = errors.New("already ended")
 
-// ErrPlaybookRunActive occurs when trying to run a command on a playbook run that is active.
+// ErrWikiDocActive occurs when trying to run a command on a wikiDoc run that is active.
 var ErrWikiDocActive = errors.New("already active")
 
-// ErrMalformedPlaybookRun occurs when a playbook run is not valid.
+// ErrMalformedWikiDoc occurs when a wikiDoc run is not valid.
 var ErrMalformedWikiDoc = errors.New("malformed")
 
 // ErrDuplicateEntry occurs when failing to insert because the entry already existed.

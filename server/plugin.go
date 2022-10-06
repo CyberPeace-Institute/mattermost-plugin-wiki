@@ -47,7 +47,8 @@ func (p *Plugin) OnActivate() error {
 	pluginAPIClient := pluginapi.NewClient(p.API, p.Driver)
 	p.pluginAPI = pluginAPIClient
 
-	pluginapi.ConfigureLogrus(logrus.New(), pluginAPIClient)
+	logger := logrus.StandardLogger()
+	pluginapi.ConfigureLogrus(logger, pluginAPIClient)
 
 	apiClient := sqlstore.NewClient(pluginAPIClient)
 	p.bot = bot.New(pluginAPIClient, "no id")

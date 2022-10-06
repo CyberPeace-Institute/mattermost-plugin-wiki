@@ -2,12 +2,12 @@
 // See LICENSE.txt for license information.
 
 export interface GlobalSettings {
-    playbook_creators_user_ids: string[]
+    wikiDoc_creators_user_ids: string[]
     enable_experimental_features: boolean
 }
 
 const defaults: GlobalSettings = {
-    playbook_creators_user_ids: [],
+    wikiDoc_creators_user_ids: [],
     enable_experimental_features: false,
 };
 

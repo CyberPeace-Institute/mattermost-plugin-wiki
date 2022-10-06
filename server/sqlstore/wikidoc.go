@@ -15,16 +15,16 @@ type sqlWikiDoc struct {
 	app.WikiDoc
 }
 
-// wikiDocStore is a sql store for playbooks. Use NewPlaybookStore to create it.
+// wikiDocStore is a sql store for wikiDocs. Use NewWikiDocStore to create it.
 type wikiDocStore struct {
-	pluginAPI      PluginAPIClient
-	log            bot.Logger
-	store          *SQLStore
-	queryBuilder   sq.StatementBuilderType
-	playbookSelect sq.SelectBuilder
+	pluginAPI     PluginAPIClient
+	log           bot.Logger
+	store         *SQLStore
+	queryBuilder  sq.StatementBuilderType
+	wikiDocSelect sq.SelectBuilder
 }
 
-// Ensure wikiDocStore implements the playbook.Store interface.
+// Ensure wikiDocStore implements the wikiDoc.Store interface.
 var _ app.WikiDocStore = (*wikiDocStore)(nil)
 
 func applyWikiDocFilterOptionsSort(builder sq.SelectBuilder, options app.WikiDocFilterOptions) (sq.SelectBuilder, error) {
@@ -72,9 +72,9 @@ func applyWikiDocFilterOptionsSort(builder sq.SelectBuilder, options app.WikiDoc
 	return builder, nil
 }
 
-// NewWikiDocStore creates a new store for playbook service.
+// NewWikiDocStore creates a new store for wikiDoc service.
 func NewWikiDocStore(pluginAPI PluginAPIClient, log bot.Logger, sqlStore *SQLStore) app.WikiDocStore {
-	playbookSelect := sqlStore.builder.
+	wikiDocSelect := sqlStore.builder.
 		Select(
 			"p.ID",
 			"p.TeamID",
@@ -85,23 +85,23 @@ func NewWikiDocStore(pluginAPI PluginAPIClient, log bot.Logger, sqlStore *SQLSto
 		From("CPI_WikiDocs p")
 
 	newStore := &wikiDocStore{
-		pluginAPI:      pluginAPI,
-		log:            log,
-		store:          sqlStore,
-		queryBuilder:   sqlStore.builder,
-		playbookSelect: playbookSelect,
+		pluginAPI:     pluginAPI,
+		log:           log,
+		store:         sqlStore,
+		queryBuilder:  sqlStore.builder,
+		wikiDocSelect: wikiDocSelect,
 	}
 	return newStore
 }
 
-// Create creates a new playbook
-func (p *wikiDocStore) Create(playbook app.WikiDoc) (id string, err error) {
-	/*if playbook.ID != "" {
+// Create creates a new wikiDoc
+func (p *wikiDocStore) Create(wikiDoc app.WikiDoc) (id string, err error) {
+	/*if wikiDoc.ID != "" {
 		return "", errors.New("ID should be empty")
 	}*/
-	playbook.ID = model.NewId()
+	wikiDoc.ID = model.NewId()
 
-	rawPlaybook, err := toSQLWikiDoc(playbook)
+	rawWikiDoc, err := toSQLWikiDoc(wikiDoc)
 	if err != nil {
 		return "", err
 	}
@@ -115,30 +115,30 @@ func (p *wikiDocStore) Create(playbook app.WikiDoc) (id string, err error) {
 	_, err = p.store.execBuilder(tx, sq.
 		Insert("CPI_WikiDocs").
 		SetMap(map[string]interface{}{
-			"ID":          rawPlaybook.ID,
-			"Name":        rawPlaybook.Name,
-			"Content":     rawPlaybook.Content,
-			"Status":      rawPlaybook.Status,
-			"OwnerUserID": rawPlaybook.OwnerUserID,
-			"TeamID":      rawPlaybook.TeamID,
-			"ChannelID":   rawPlaybook.ChannelID,
-			"Description": rawPlaybook.Description,
-			"CreateAt":    rawPlaybook.CreateAt,
-			"UpdateAt":    rawPlaybook.UpdateAt,
-			"DeleteAt":    rawPlaybook.DeleteAt,
+			"ID":          rawWikiDoc.ID,
+			"Name":        rawWikiDoc.Name,
+			"Content":     rawWikiDoc.Content,
+			"Status":      rawWikiDoc.Status,
+			"OwnerUserID": rawWikiDoc.OwnerUserID,
+			"TeamID":      rawWikiDoc.TeamID,
+			"ChannelID":   rawWikiDoc.ChannelID,
+			"Description": rawWikiDoc.Description,
+			"CreateAt":    rawWikiDoc.CreateAt,
+			"UpdateAt":    rawWikiDoc.UpdateAt,
+			"DeleteAt":    rawWikiDoc.DeleteAt,
 		}))
 	if err != nil {
-		return "", errors.Wrap(err, "failed to store new playbook")
+		return "", errors.Wrap(err, "failed to store new wikiDoc")
 	}
 
 	if err = tx.Commit(); err != nil {
 		return "", errors.Wrap(err, "could not commit transaction")
 	}
 
-	return rawPlaybook.ID, nil
+	return rawWikiDoc.ID, nil
 }
 
-// Get retrieves a playbook
+// Get retrieves a wikiDoc
 func (p *wikiDocStore) Get(id string) (app.WikiDoc, error) {
 	if id == "" {
 		return app.WikiDoc{}, errors.New("ID cannot be empty")
@@ -150,15 +150,15 @@ func (p *wikiDocStore) Get(id string) (app.WikiDoc, error) {
 	}
 	defer p.store.finalizeTransaction(tx)
 
-	var rawPlaybook sqlWikiDoc
-	err = p.store.getBuilder(tx, &rawPlaybook, p.playbookSelect.Where(sq.Eq{"p.ID": id}))
+	var rawWikiDoc sqlWikiDoc
+	err = p.store.getBuilder(tx, &rawWikiDoc, p.wikiDocSelect.Where(sq.Eq{"p.ID": id}))
 	if err == sql.ErrNoRows {
-		return app.WikiDoc{}, errors.Wrapf(app.ErrNotFound, "playbook does not exist for id '%s'", id)
+		return app.WikiDoc{}, errors.Wrapf(app.ErrNotFound, "wikiDoc does not exist for id '%s'", id)
 	} else if err != nil {
-		return app.WikiDoc{}, errors.Wrapf(err, "failed to get playbook by id '%s'", id)
+		return app.WikiDoc{}, errors.Wrapf(err, "failed to get wikiDoc by id '%s'", id)
 	}
 
-	playbook, err := toWikiDoc(rawPlaybook)
+	wikiDoc, err := toWikiDoc(rawWikiDoc)
 	if err != nil {
 		return app.WikiDoc{}, err
 	}
@@ -167,10 +167,10 @@ func (p *wikiDocStore) Get(id string) (app.WikiDoc, error) {
 		return app.WikiDoc{}, errors.Wrap(err, "could not commit transaction")
 	}
 
-	return playbook, nil
+	return wikiDoc, nil
 }
 
-// GetWikiDocs retrieves all playbooks that are not deleted.
+// GetWikiDocs retrieves all wikiDocs that are not deleted.
 // Members are not retrieved for this as the query would be large and we don't need it for this for now.
 // This is only used for the keywords feature
 func (p *wikiDocStore) GetWikiDocs(requesterInfo app.RequesterInfo, options app.WikiDocFilterOptions) (*app.GetWikiDocsResults, error) {
@@ -271,7 +271,7 @@ func (p *wikiDocStore) buildPermissionsExpr(info app.RequesterInfo) sq.Sqlizer {
 	}
 
 	// 1. Is the user a channel member? If so, they have permission to view the run.
-	// 2. Is the playbook open to everyone on the team, or is the user a member of the playbook?
+	// 2. Is the wikiDoc open to everyone on the team, or is the user a member of the wikiDoc?
 	//    If so, they have permission to view the run.
 	return sq.Expr(`
         (
@@ -282,95 +282,13 @@ func (p *wikiDocStore) buildPermissionsExpr(info app.RequesterInfo) sq.Sqlizer {
 		)`, info.UserID)
 }
 
-// GetWikiDocsForChannel retrieves all playbooks on the specified team given the provided options.
-/*func (p *wikiDocStore) GetWikiDocsForChannel(requesterInfo app.RequesterInfo, channelID string, opts app.WikiDocFilterOptions) (app.GetPlaybooksResults, error) {
-	// Check that you are a playbook member or there are no restrictions.
-	permissionsAndFilter := p.buildPermissionsExpr(requesterInfo)
-
-	queryForResults := p.store.builder.
-		Select(
-			"p.ID",
-			"p.Name",
-			"p.Description",
-			"p.TeamID",
-			"p.CreateAt",
-			"p.DeleteAt",
-		).
-		From("CPI_WikiDocs AS p").
-		//LeftJoin("Channels c ON c.Id = p.ChannelID").
-		GroupBy("p.ID").
-		Where(permissionsAndFilter)
-
-	queryForResults, err := applyPlaybookFilterOptionsSort(queryForResults, opts)
-	if err != nil {
-		return app.GetPlaybooksResults{}, errors.Wrap(err, "failed to apply sort options")
-	}
-
-	queryForTotal := p.store.builder.
-		Select("COUNT(*)").
-		From("CPI_WikiDocs AS p").
-		Where(permissionsAndFilter)
-
-	if opts.SearchTerm != "" {
-		column := "p.Title"
-		searchString := opts.SearchTerm
-
-		// Postgres performs a case-sensitive search, so we need to lowercase
-		// both the column contents and the search string
-		if p.store.db.DriverName() == model.DatabaseDriverPostgres {
-			column = "LOWER(p.Name)"
-			searchString = strings.ToLower(opts.SearchTerm)
-		}
-
-		queryForResults = queryForResults.Where(sq.Like{column: fmt.Sprint("%", searchString, "%")})
-		queryForTotal = queryForTotal.Where(sq.Like{column: fmt.Sprint("%", searchString, "%")})
-	}
-
-	if !opts.WithArchived {
-		queryForResults = queryForResults.Where(sq.Eq{"p.DeleteAt": 0})
-		queryForTotal = queryForTotal.Where(sq.Eq{"DeleteAt": 0})
-	}
-
-	var playbooks []app.WikiDoc
-	err = p.store.selectBuilder(p.store.db, &playbooks, queryForResults)
-	if err == sql.ErrNoRows {
-		return app.GetPlaybooksResults{}, errors.Wrap(app.ErrNotFound, "no playbooks found")
-	} else if err != nil {
-		return app.GetPlaybooksResults{}, errors.Wrap(err, "failed to get playbooks")
-	}
-
-	var total int
-	if err = p.store.getBuilder(p.store.db, &total, queryForTotal); err != nil {
-		return app.GetWikiDocsResults{}, errors.Wrap(err, "failed to get total count")
-	}
-
-	ids := make([]string, len(playbooks))
-	for _, pb := range playbooks {
-		ids = append(ids, pb.ID)
-	}
-
-	pageCount := 0
-	if opts.PerPage > 0 {
-		pageCount = int(math.Ceil(float64(total) / float64(opts.PerPage)))
-	}
-	hasMore := opts.Page+1 < pageCount
-
-	return app.GetWikiDocsResults{
-		TotalCount: total,
-		PageCount:  pageCount,
-		HasMore:    hasMore,
-		Items:      playbooks,
-	}, nil
-}
-*/
-
-// Update updates a playbook
-func (p *wikiDocStore) Update(playbook app.WikiDoc) (err error) {
-	if playbook.ID == "" {
+// Update updates a wikidoc
+func (p *wikiDocStore) Update(wikiDoc app.WikiDoc) (err error) {
+	if wikiDoc.ID == "" {
 		return errors.New("id should not be empty")
 	}
 
-	rawPlaybook, err := toSQLWikiDoc(playbook)
+	rawWikiDoc, err := toSQLWikiDoc(wikiDoc)
 	if err != nil {
 		return err
 	}
@@ -384,20 +302,20 @@ func (p *wikiDocStore) Update(playbook app.WikiDoc) (err error) {
 	_, err = p.store.execBuilder(tx, sq.
 		Update("CPI_WikiDocs").
 		SetMap(map[string]interface{}{
-			"Name":        rawPlaybook.Name,
-			"Content":     rawPlaybook.Content,
-			"Status":      rawPlaybook.Status,
-			"OwnerUserID": rawPlaybook.OwnerUserID,
-			"TeamID":      rawPlaybook.TeamID,
-			"ChannelID":   rawPlaybook.ChannelID,
-			"Description": rawPlaybook.Description,
-			"UpdateAt":    rawPlaybook.UpdateAt,
-			"DeleteAt":    rawPlaybook.DeleteAt,
+			"Name":        rawWikiDoc.Name,
+			"Content":     rawWikiDoc.Content,
+			"Status":      rawWikiDoc.Status,
+			"OwnerUserID": rawWikiDoc.OwnerUserID,
+			"TeamID":      rawWikiDoc.TeamID,
+			"ChannelID":   rawWikiDoc.ChannelID,
+			"Description": rawWikiDoc.Description,
+			"UpdateAt":    rawWikiDoc.UpdateAt,
+			"DeleteAt":    rawWikiDoc.DeleteAt,
 		}).
-		Where(sq.Eq{"ID": rawPlaybook.ID}))
+		Where(sq.Eq{"ID": rawWikiDoc.ID}))
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to update playbook with id '%s'", rawPlaybook.ID)
+		return errors.Wrapf(err, "failed to update wikiDoc with id '%s'", rawWikiDoc.ID)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -407,7 +325,7 @@ func (p *wikiDocStore) Update(playbook app.WikiDoc) (err error) {
 	return nil
 }
 
-// Archive archives a playbook.
+// Archive archives a wikiDoc.
 func (p *wikiDocStore) Archive(id string) error {
 	if id == "" {
 		return errors.New("ID cannot be empty")
@@ -419,7 +337,7 @@ func (p *wikiDocStore) Archive(id string) error {
 		Where(sq.Eq{"ID": id}))
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete playbook with id '%s'", id)
+		return errors.Wrapf(err, "failed to delete wikiDoc with id '%s'", id)
 	}
 
 	return nil
@@ -431,8 +349,8 @@ func toSQLWikiDoc(wikiDocs app.WikiDoc) (*sqlWikiDoc, error) {
 	}, nil
 }
 
-func toWikiDoc(rawPlaybook sqlWikiDoc) (app.WikiDoc, error) {
-	p := rawPlaybook.WikiDoc
+func toWikiDoc(rawWikiDoc sqlWikiDoc) (app.WikiDoc, error) {
+	p := rawWikiDoc.WikiDoc
 
 	return p, nil
 }

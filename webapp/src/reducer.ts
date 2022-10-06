@@ -19,20 +19,8 @@ import {
     ShowChannelActionsModal,
     SHOW_CHANNEL_ACTIONS_MODAL,
     HIDE_CHANNEL_ACTIONS_MODAL,
-    ShowRunActionsModal,
-    HideRunActionsModal,
-    SHOW_RUN_ACTIONS_MODAL,
-    HIDE_RUN_ACTIONS_MODAL,
     SetHasViewedChannel,
     SET_HAS_VIEWED_CHANNEL,
-    SetRHSAboutCollapsedState,
-    SET_RHS_ABOUT_COLLAPSED_STATE,
-    SetChecklistCollapsedState,
-    SetAllChecklistsCollapsedState,
-    SET_CHECKLIST_COLLAPSED_STATE,
-    SET_ALL_CHECKLISTS_COLLAPSED_STATE,
-    SetEveryChecklistCollapsedState,
-    SET_EVERY_CHECKLIST_COLLAPSED_STATE,
     SetRHSState,
 } from './types/actions';
 import {GlobalSettings} from './types/settings';
@@ -107,17 +95,6 @@ const channelActionsModalVisibility = (state = false, action: ShowChannelActions
     }
 };
 
-const runActionsModalVisibility = (state = false, action: ShowRunActionsModal | HideRunActionsModal) => {
-    switch (action.type) {
-    case SHOW_RUN_ACTIONS_MODAL:
-        return true;
-    case HIDE_RUN_ACTIONS_MODAL:
-        return false;
-    default:
-        return state;
-    }
-};
-
 const hasViewedByChannel = (state: Record<string, boolean> = {}, action: SetHasViewedChannel) => {
     switch (action.type) {
     case SET_HAS_VIEWED_CHANNEL:
@@ -125,60 +102,6 @@ const hasViewedByChannel = (state: Record<string, boolean> = {}, action: SetHasV
             ...state,
             [action.channelId]: action.hasViewed,
         };
-    default:
-        return state;
-    }
-};
-
-const rhsAboutCollapsedByChannel = (state: Record<string, boolean> = {}, action: SetRHSAboutCollapsedState) => {
-    switch (action.type) {
-    case SET_RHS_ABOUT_COLLAPSED_STATE:
-        return {
-            ...state,
-            [action.channelId]: action.collapsed,
-        };
-    default:
-        return state;
-    }
-};
-
-// checklistCollapsedState keeps a map of channelId -> checklist number -> collapsed
-const checklistCollapsedState = (
-    state: Record<string, Record<number, boolean>> = {},
-    action:
-    | SetChecklistCollapsedState
-    | SetAllChecklistsCollapsedState
-    | SetEveryChecklistCollapsedState,
-) => {
-    switch (action.type) {
-    case SET_CHECKLIST_COLLAPSED_STATE: {
-        const setAction = action as SetChecklistCollapsedState;
-        return {
-            ...state,
-            [setAction.key]: {
-                ...state[setAction.key],
-                [setAction.checklistIndex]: setAction.collapsed,
-            },
-        };
-    }
-    case SET_ALL_CHECKLISTS_COLLAPSED_STATE: {
-        const setAction = action as SetAllChecklistsCollapsedState;
-        const newState: Record<number, boolean> = {};
-        for (let i = 0; i < setAction.numOfChecklists; i++) {
-            newState[i] = setAction.collapsed;
-        }
-        return {
-            ...state,
-            [setAction.key]: newState,
-        };
-    }
-    case SET_EVERY_CHECKLIST_COLLAPSED_STATE: {
-        const setAction = action as SetEveryChecklistCollapsedState;
-        return {
-            ...state,
-            [setAction.key]: setAction.state,
-        };
-    }
     default:
         return state;
     }
@@ -192,12 +115,9 @@ const reducer = combineReducers({
     globalSettings,
     postMenuModalVisibility,
     channelActionsModalVisibility,
-    runActionsModalVisibility,
     hasViewedByChannel,
-    rhsAboutCollapsedByChannel,
-    checklistCollapsedState,
 });
 
 export default reducer;
 
-export type PlaybooksPluginState = ReturnType<typeof reducer>;
+export type WikiPluginState = ReturnType<typeof reducer>;

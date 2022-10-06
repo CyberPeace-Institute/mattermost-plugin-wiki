@@ -6,9 +6,19 @@ import {useDispatch, useSelector} from 'react-redux';
 import Scrollbars from 'react-custom-scrollbars';
 import styled, {css} from 'styled-components';
 
-import {getCurrentTeam} from 'mattermost-redux/selectors/entities/teams';
+import {GlobalState} from 'mattermost-redux/types/store';
+
+import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
 
 import {FormattedMessage} from 'react-intl';
+
+import {getCurrentChannelId} from 'mattermost-redux/selectors/entities/channels';
+import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
+
+import {createWikiDoc} from '../../client';
+import {useWikiDocsCrud} from '../../hooks/wikiDocs';
+import {RHSState} from '../../types/rhs';
+import {currentRHSState} from '../../selectors';
 
 import {
     renderThumbVertical,
@@ -134,13 +144,92 @@ const ListSection = styled.div`
 
 const RHSHome = () => {
     const dispatch = useDispatch();
-    const currentTeam = useSelector(getCurrentTeam);
+    const rhsState = useSelector<GlobalState, RHSState>(currentRHSState);
 
-    //const currentRun = useSelector(currentPlaybookRun);
-    //const hasCurrentRun = Boolean(currentRun);
-    //const [currentPlaybook, setCurrentPlaybook] = useState<Playbook | null>();
+    const currentChannelId = useSelector<GlobalState, string>(getCurrentChannelId);
+    const currentTeamId = useSelector<GlobalState, string>(getCurrentTeamId);
+    const currentUserId = useSelector<GlobalState, string>(getCurrentUserId);
+
+    if (rhsState === RHSState.ViewingSingleWikiDoc) {
+        //return <RHSSingleWikiDoc />
+    }
+
+    const [
+        wikiDocs,
+        {isLoading, totalCount, params},
+        {setPage, sortBy, setSelectedWikiDoc, setSearchTerm, isFiltering, fetchWikiDocs},
+    ] = useWikiDocsCrud({
+        page: 0,
+        per_page: 10,
+    });
+
+    const createNew = async () => {
+        const wikiDoc = await createWikiDoc(currentChannelId, currentUserId, currentTeamId, 'New', 'test');
+        fetchWikiDocs();
+        console.log(wikiDoc);
+    };
+
+    ///const hasWikiDocs = Boolean(wikiDocs?.length);
 
     let headerContent;
+
+    const has = true;
+
+    if (has) {
+        const list = (
+            <>
+                { wikiDocs ?
+                    wikiDocs.map((wiki, index) => (
+                        <li key={'wikiList' + index}>
+                            {wiki.name}
+                        </li>
+                    )) :
+                    <li>
+                        <FormattedMessage
+                            defaultMessage='No wiki docs yet.'
+                            values={{br: <br />}}
+                        />
+                    </li>
+                }
+            </>
+        );
+
+        headerContent = (
+            <WelcomeBlock>
+                <Heading>
+                    <FormattedMessage defaultMessage='Wiki Docs List' />
+                </Heading>
+                <WelcomeDesc>
+                    <FormattedMessage
+                        defaultMessage='Here you will see informative pages that can help you better navigate this channel.'
+                        values={{br: <br />}}
+                    />
+                </WelcomeDesc>
+
+                <ul>
+                    {list}
+                    <li>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                createNew();
+                            }}
+                        >
+                            <FormattedMessage
+                                defaultMessage='Add New'
+                                values={{br: <br />}}
+                            />
+                        </button>
+                    </li>
+                </ul>
+
+                <WelcomeWarn>
+                    <FormattedMessage defaultMessage="You don't have permission to create wiki pages in this channel." />
+                </WelcomeWarn>
+            </WelcomeBlock>
+        );
+    }
+
     if (!headerContent) {
         headerContent = (
             <WelcomeBlock>

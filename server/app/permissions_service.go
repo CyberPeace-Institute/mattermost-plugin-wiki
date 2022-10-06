@@ -63,7 +63,7 @@ func (p *PermissionsService) DeleteWikiDoc(userID string, wikiDoc WikiDoc) error
 func (p *PermissionsService) WikiDocView(userID string, wikiDocID string) error {
 	wikiDoc, err := p.wikiDocsService.Get(wikiDocID)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to get playbook to determine permissions, playbook id `%s`", wikiDocID)
+		return errors.Wrapf(err, "Unable to get wikidoc to determine permissions, wikiDoc id `%s`", wikiDocID)
 	}
 
 	if p.canReadChannel(userID, wikiDoc.ChannelID) {
@@ -74,7 +74,7 @@ func (p *PermissionsService) WikiDocView(userID string, wikiDocID string) error 
 }
 
 func (p *PermissionsService) WikiDocList(userID string, channelID string) error {
-	// Can list playbooks if you are on the team
+	// Can list wikiDocs if you are on the team
 	if p.canReadChannel(userID, channelID) {
 		return nil
 	}

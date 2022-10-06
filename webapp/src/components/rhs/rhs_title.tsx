@@ -9,7 +9,7 @@ const RHSTitle = () => {
     return (
         <RHSTitleText>
             {/* product name; don't translate */}
-            {'Playbooks'}
+            {'WikiDocs'}
         </RHSTitleText>
     );
 };
