@@ -75,6 +75,8 @@ func (p *Plugin) OnActivate() error {
 	}
 	mutex.Unlock()
 
+	p.handler = api.NewHandler(pluginAPIClient, p.bot)
+
 	api.NewWikiDocHandler(
 		p.handler.APIRouter,
 		p.wikiDocsService,
