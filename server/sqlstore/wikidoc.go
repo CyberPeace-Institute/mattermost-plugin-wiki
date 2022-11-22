@@ -3,9 +3,9 @@ package sqlstore
 import (
 	"database/sql"
 	"fmt"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/app"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/bot"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/mattermost/mattermost-plugin-wiki/server/app"
-	"github.com/mattermost/mattermost-plugin-wiki/server/bot"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 	"math"

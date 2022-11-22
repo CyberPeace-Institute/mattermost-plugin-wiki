@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/mattermost/mattermost-plugin-wiki/server/bot"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/bot"
 
 	"github.com/gorilla/mux"
 

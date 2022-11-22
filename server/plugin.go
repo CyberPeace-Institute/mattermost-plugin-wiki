@@ -1,16 +1,16 @@
 package main
 
 import (
-	"github.com/mattermost/mattermost-plugin-wiki/server/app"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/app"
 	"github.com/pkg/errors"
 	"net/http"
 	"sync"
 
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
-	"github.com/mattermost/mattermost-plugin-wiki/server/api"
-	"github.com/mattermost/mattermost-plugin-wiki/server/bot"
-	"github.com/mattermost/mattermost-plugin-wiki/server/sqlstore"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/api"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/bot"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/sqlstore"
 
 	"github.com/sirupsen/logrus"
 

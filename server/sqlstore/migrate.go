@@ -4,17 +4,17 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"github.com/mattermost/morph"
 	"path/filepath"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 
-	"github.com/isacikgoz/morph"
-	"github.com/isacikgoz/morph/drivers"
-	ms "github.com/isacikgoz/morph/drivers/mysql"
-	ps "github.com/isacikgoz/morph/drivers/postgres"
-	"github.com/isacikgoz/morph/sources/embedded"
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/morph/drivers"
+	ms "github.com/mattermost/morph/drivers/mysql"
+	ps "github.com/mattermost/morph/drivers/postgres"
+	"github.com/mattermost/morph/sources/embedded"
 )
 
 //go:embed migrations

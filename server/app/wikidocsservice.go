@@ -4,7 +4,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-wiki/server/bot"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/bot"
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 )

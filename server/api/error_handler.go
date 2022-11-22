@@ -6,7 +6,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-wiki/server/bot"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/bot"
 )
 
 type ErrorHandler struct {

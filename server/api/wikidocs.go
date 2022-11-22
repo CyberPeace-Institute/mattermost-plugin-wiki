@@ -13,8 +13,8 @@ import (
 
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 
-	"github.com/mattermost/mattermost-plugin-wiki/server/app"
-	"github.com/mattermost/mattermost-plugin-wiki/server/bot"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/app"
+	"github.com/CyberPeace-Institute/mattermost-plugin-wiki/server/bot"
 )
 
 // WikiDocHandler is the API handler.

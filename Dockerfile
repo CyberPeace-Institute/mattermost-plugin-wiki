@@ -1,5 +1,5 @@
 #FROM golang:1.14 as go14
-FROM golang:1.16
+FROM golang:1.18
 WORKDIR /app
 COPY . .
 
