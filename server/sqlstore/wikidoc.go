@@ -34,6 +34,10 @@ func applyWikiDocFilterOptionsSort(builder sq.SelectBuilder, options app.WikiDoc
 		sort = "ID"
 	case app.SortByCreateAt:
 		sort = "CreateAt"
+	case app.SortByName:
+		sort = "Name"
+	case app.SortByStatus:
+		sort = "Status"
 	case "":
 		// Default to a stable sort if none explicitly provided.
 		sort = "ID"
