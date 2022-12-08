@@ -55,6 +55,7 @@ func NewWikiDocHandler(
 	wikiDocRouterAuthorized.HandleFunc("", handler.updateWikiDoc).Methods(http.MethodPatch)
 	wikiDocRouterAuthorized.HandleFunc("/content", handler.content).Methods(http.MethodPost)
 	wikiDocRouterAuthorized.HandleFunc("/status", handler.status).Methods(http.MethodPost)
+	wikiDocRouterAuthorized.HandleFunc("", handler.deleteWikiDoc).Methods(http.MethodDelete)
 
 	//channelRouter := wikiDocsRouter.PathPrefix("/channel").Subrouter()
 	//channelRouter.HandleFunc("/{channel_id:[A-Za-z0-9]+}", handler.getWikiDocByChannel).Methods(http.MethodGet)
@@ -104,15 +105,53 @@ func (h *WikiDocHandler) updateWikiDoc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.wikiDocService.Update(wikiDoc)
+	if wikiDoc.Name != "" {
+		oldWikiDoc.Name = wikiDoc.Name
+	}
+	if wikiDoc.Content != "" {
+		oldWikiDoc.Content = wikiDoc.Content
+	}
+	if wikiDoc.Description != "" {
+		oldWikiDoc.Description = wikiDoc.Description
+	}
+	if wikiDoc.Status != "" {
+		oldWikiDoc.Status = wikiDoc.Status
+	}
+
+	err = h.wikiDocService.Update(oldWikiDoc)
 	if err != nil {
 		h.HandleError(w, err)
 		return
 	}
 
-	updatedWikiDoc := wikiDoc
+	updatedWikiDoc := oldWikiDoc
 
 	ReturnJSON(w, updatedWikiDoc, http.StatusOK)
+}
+
+// Note that this currently does nothing. This is temporary given the removal of stages. Will be used by status.
+func (h *WikiDocHandler) deleteWikiDoc(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	wikiDocID := vars["id"]
+	userID := r.Header.Get("Mattermost-User-ID")
+
+	wikiDoc, err := h.wikiDocService.Get(wikiDocID)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	if !h.PermissionsCheck(w, h.permissions.HasEditPermissionsToWikiDocs(userID, wikiDoc)) {
+		return
+	}
+
+	err = h.wikiDocService.Delete(wikiDocID)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	ReturnJSON(w, "Deleted the wikiDoc", http.StatusOK)
 }
 
 // createWikiDocFromDialog handles the interactive dialog submission when a user presses confirm on
@@ -132,13 +171,21 @@ func (h *WikiDocHandler) createWikiDocFromDialog(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var name, description string
+	var name, description, content, status string
 	if rawName, ok := request.Submission[app.DialogFieldNameKey].(string); ok {
 		name = rawName
 	}
 
 	if rawDescription, ok := request.Submission[app.DialogFieldDescriptionKey].(string); ok {
 		description = rawDescription
+	}
+
+	if rawContent, ok := request.Submission[app.DialogFieldContentKey].(string); ok {
+		content = rawContent
+	}
+
+	if rawStatus, ok := request.Submission[app.DialogFieldStatusKey].(string); ok {
+		status = rawStatus
 	}
 
 	wikDocId, err := h.createWikiDoc(
@@ -148,6 +195,8 @@ func (h *WikiDocHandler) createWikiDocFromDialog(w http.ResponseWriter, r *http.
 			ChannelID:   request.ChannelId,
 			Name:        name,
 			Description: description,
+			Content:     content,
+			Status:      status,
 		},
 		request.UserId,
 	)

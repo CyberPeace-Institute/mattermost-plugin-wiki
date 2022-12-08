@@ -35,13 +35,22 @@ type WikiDocService interface {
 
 	// Duplicate duplicates a wikiDoc
 	Duplicate(wikiDoc WikiDoc, userID string) (string, error)
+
+	// Delete deletes a wikiDoc
+	Delete(id string) error
 }
 
 // DialogFieldWikiDocIDKey is the key for the wikiDoc ID field used in OpenCreateWikiDocRunDialog.
 const DialogFieldWikiDocIDKey = "wikiDocID"
 
-// DialogFieldNameKey is the key for the wikiDoc run name field used in OpenCreateWikiDocRunDialog.
-const DialogFieldNameKey = "wikiDocName"
+// DialogFieldNameKey is the key for the wikiDoc name field used in OpenCreateWikiDocRunDialog.
+const DialogFieldNameKey = "name"
+
+// DialogFieldContentKey is the key for the wikiDoc content field used in OpenCreateWikiDocRunDialog.
+const DialogFieldContentKey = "content"
+
+// DialogFieldStatusKey is the key for the wikiDoc status field used in OpenCreateWikiDocRunDialog.
+const DialogFieldStatusKey = "status"
 
 // DialogFieldDescriptionKey is the key for the description textarea field used in UpdateWikiDocRunDialog
 const DialogFieldDescriptionKey = "description"
@@ -101,4 +110,8 @@ func (s *wikiDocsService) Update(wikiDoc WikiDoc) error {
 func (s *wikiDocsService) Duplicate(wikiDoc WikiDoc, userID string) (string, error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (s *wikiDocsService) Delete(id string) error {
+	return s.store.Delete(id)
 }
