@@ -21,6 +21,9 @@ import {GlobalSettings} from './types/settings';
 import {selectToggleRHS} from './selectors';
 import {RHSState} from './types/rhs';
 import {WikiDoc} from './types/wikiDoc';
+import {modals} from './webapp_globals';
+import {makeWikiDocCreateModal, WikiDocCreateModalProps} from './components/modals/create_wikidoc_modal';
+import {makeWikiDocViewModal, WikiDocViewModalProps} from './components/modals/view_wikidoc_modal';
 
 export interface ReceivedGlobalSettings {
     type: typeof RECEIVED_GLOBAL_SETTINGS;
@@ -45,6 +48,18 @@ export function setRHSOpen(open: boolean): SetRHSOpen {
     return {
         type: SET_RHS_OPEN,
         open,
+    };
+}
+
+export function displayWikiDocCreateModal(props: WikiDocCreateModalProps) {
+    return async (dispatch: Dispatch<AnyAction>) => {
+        dispatch(modals.openModal(makeWikiDocCreateModal(props)));
+    };
+}
+
+export function displayWikiDocViewModal(props: WikiDocViewModalProps) {
+    return async (dispatch: Dispatch<AnyAction>) => {
+        dispatch(modals.openModal(makeWikiDocViewModal(props)));
     };
 }
 

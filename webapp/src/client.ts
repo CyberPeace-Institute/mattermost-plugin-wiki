@@ -140,7 +140,7 @@ export const doFetchWithoutResponse = async (url: string, options = {}) => {
 };
 
 export async function fetchWikiDocs(teamId: string, channelId: string, params: FetchWikiDocsParams) {
-    const queryParams = qs.stringify(params, {addQueryPrefix: true, indices: false});
+    const queryParams = qs.stringify({...params, team_id: teamId, channel_id: channelId}, {addQueryPrefix: true, indices: false});
 
     let data = await doGet(`${apiUrl}/wikiDocs${queryParams}`);
     if (!data) {
@@ -161,7 +161,7 @@ export async function fetchWikiDoc(id: string) {
     return data;
 }
 
-export async function createWikiDoc(channel_id: string, user_id: string, team_id: string, name: string, description: string) {
+export async function createWikiDoc(channel_id: string, user_id: string, team_id: string, name: string, description: string, status: string, content: string) {
     const run = await doPost(`${apiUrl}/wikiDocs/dialog`, JSON.stringify({
         user_id,
         channel_id,
@@ -169,6 +169,8 @@ export async function createWikiDoc(channel_id: string, user_id: string, team_id
         submission: {
             name,
             description,
+            status,
+            content,
         },
     }));
     return run as WikiDoc;
@@ -180,11 +182,8 @@ export async function saveWikiDoc(wikiDoc: WikiDoc) {
         return {};
     }
 
-    await doFetchWithoutResponse(`${apiUrl}/wikiDocs/${wikiDoc.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(wikiDoc),
-    });
-    return {id: wikiDoc.id};
+    const wiki = await doPatch(`${apiUrl}/wikiDocs/${wikiDoc.id}`, JSON.stringify(wikiDoc));
+    return wiki as WikiDoc;
 }
 
 export async function updateWikiDocContent(wikiId: string, content: string) {
@@ -198,6 +197,11 @@ export async function updateWikiDocStatus(wikiId: string, status: string) {
     const run = await doPost(`${apiUrl}/wikiDocs/${wikiId}/status`, JSON.stringify({
         status,
     }));
+    return run as WikiDoc;
+}
+
+export async function deleteWikiDoc(wikiId: string) {
+    const run = await doDelete(`${apiUrl}/wikiDocs/${wikiId}`);
     return run as WikiDoc;
 }
 
