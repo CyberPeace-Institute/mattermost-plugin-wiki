@@ -57,6 +57,9 @@ type WikiDocStore interface {
 
 	// Archive archives a wikiDoc
 	Archive(id string) error
+
+	// Delete deletes a wikiDoc
+	Delete(id string) error
 }
 
 const PerPageDefault = 1000

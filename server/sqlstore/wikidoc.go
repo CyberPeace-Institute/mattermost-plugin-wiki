@@ -80,13 +80,13 @@ func applyWikiDocFilterOptionsSort(builder sq.SelectBuilder, options app.WikiDoc
 func NewWikiDocStore(pluginAPI PluginAPIClient, log bot.Logger, sqlStore *SQLStore) app.WikiDocStore {
 	wikiDocSelect := sqlStore.builder.
 		Select(
-			"p.ID",
-			"p.TeamID",
-			"p.ChannelID",
-			"p.CreateAt",
-			"p.UpdateAt",
+			"w.ID",
+			"w.TeamID",
+			"w.ChannelID",
+			"w.CreateAt",
+			"w.UpdateAt",
 		).
-		From("CPI_WikiDocs p")
+		From("CPI_WikiDocs w")
 
 	newStore := &wikiDocStore{
 		pluginAPI:     pluginAPI,
@@ -155,7 +155,7 @@ func (p *wikiDocStore) Get(id string) (app.WikiDoc, error) {
 	defer p.store.finalizeTransaction(tx)
 
 	var rawWikiDoc sqlWikiDoc
-	err = p.store.getBuilder(tx, &rawWikiDoc, p.wikiDocSelect.Where(sq.Eq{"p.ID": id}))
+	err = p.store.getBuilder(tx, &rawWikiDoc, p.wikiDocSelect.Where(sq.Eq{"w.ID": id}))
 	if err == sql.ErrNoRows {
 		return app.WikiDoc{}, errors.Wrapf(app.ErrNotFound, "wikiDoc does not exist for id '%s'", id)
 	} else if err != nil {
@@ -185,20 +185,20 @@ func (p *wikiDocStore) GetWikiDocs(requesterInfo app.RequesterInfo, options app.
 
 	queryForResults := p.store.builder.
 		Select(
-			"p.ID",
-			"p.Name",
-			"p.Content",
-			"p.Description",
-			"p.Status",
-			"p.OwnerUserID",
-			"p.TeamID",
-			"p.ChannelID",
-			"p.CreateAt",
-			"p.UpdateAt",
-			"p.DeleteAt",
+			"w.ID",
+			"w.Name",
+			"w.Content",
+			"w.Description",
+			"w.Status",
+			"w.OwnerUserID",
+			"w.TeamID",
+			"w.ChannelID",
+			"w.CreateAt",
+			"w.UpdateAt",
+			"w.DeleteAt",
 		).
-		From("CPI_WikiDocs AS p").
-		Where(sq.Eq{"p.DeleteAt": 0})
+		From("CPI_WikiDocs AS w").
+		Where(sq.Eq{"w.DeleteAt": 0})
 
 	if options.OwnerID != "" {
 		queryForResults = queryForResults.Where(sq.Eq{"w.OwnerUserID": options.OwnerID})
@@ -265,11 +265,11 @@ func (p *wikiDocStore) buildPermissionsExpr(info app.RequesterInfo) sq.Sqlizer {
 	// Guests must be channel members
 	if info.IsGuest {
 		return sq.Expr(`(
-			p.Status = "Published"
+			w.Status = "Published"
 			AND
 			  EXISTS(SELECT 1
 						 FROM ChannelMembers as cm
-						 WHERE cm.ChannelId = p.ChannelID
+						 WHERE cm.ChannelId = w.ChannelID
 						   AND cm.UserId = ?)
 		)`, info.UserID)
 	}
@@ -281,7 +281,7 @@ func (p *wikiDocStore) buildPermissionsExpr(info app.RequesterInfo) sq.Sqlizer {
         (
 			EXISTS(SELECT 1
 					 FROM ChannelMembers as cm
-					 WHERE cm.ChannelId = p.ChannelID
+					 WHERE cm.ChannelId = w.ChannelID
 					   AND cm.UserId = ?)
 		)`, info.UserID)
 }
@@ -338,6 +338,22 @@ func (p *wikiDocStore) Archive(id string) error {
 	_, err := p.store.execBuilder(p.store.db, sq.
 		Update("CPI_WikiDocs").
 		Set("DeleteAt", model.GetMillis()).
+		Where(sq.Eq{"ID": id}))
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete wikiDoc with id '%s'", id)
+	}
+
+	return nil
+}
+
+func (p *wikiDocStore) Delete(id string) error {
+	if id == "" {
+		return errors.New("ID cannot be empty")
+	}
+
+	_, err := p.store.execBuilder(p.store.db, sq.
+		Delete("CPI_WikiDocs").
 		Where(sq.Eq{"ID": id}))
 
 	if err != nil {
