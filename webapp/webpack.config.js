@@ -142,13 +142,15 @@ if (targetIsDevServer) {
             proxy: [{
                 context: () => true,
                 bypass(req) {
-                    if (req.url.indexOf('/static/plugins/playbooks/') === 0) {
+                    if (req.url.indexOf('/static/plugins/cpi.wiki/') === 0) {
                         return '/main.js'; // return the webpacked asset
                     }
                     return null;
                 },
                 logLevel: 'silent',
-                target: 'https://metis.cyberpeaceinstitute.org', //target: 'http://localhost:8065',
+
+                //target: 'https://metis.cyberpeaceinstitute.org',
+                target: 'http://localhost:7001',
                 secure: false,
                 xfwd: true,
                 ws: true,

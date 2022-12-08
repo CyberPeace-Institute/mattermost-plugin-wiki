@@ -5,14 +5,14 @@ export interface WikiDoc {
     id: string;
     name: string;
     content: string;
-    description: string;
-    status: string;
-    owner_user_id: string;
-    team_id: string;
-    channel_id: string;
-    create_at: number;
-    update_at: number;
-    delete_at: number;
+    description?: string;
+    status?: string;
+    owner_user_id?: string;
+    team_id?: string;
+    channel_id?: string;
+    create_at?: number;
+    update_at?: number;
+    delete_at?: number;
 }
 
 export interface FetchWikiDocsReturn {
@@ -25,6 +25,13 @@ export interface FetchWikiDocsReturn {
 export enum WikiDocStatus {
     Private = 'Private',
     Published = 'Published',
+}
+
+export function getWikiDocStatuses() {
+    return Object.values(WikiDocStatus).map((status) => {
+        return {value: status, label: status};
+    }
+    );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

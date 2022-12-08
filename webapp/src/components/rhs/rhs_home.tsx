@@ -6,7 +6,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import Scrollbars from 'react-custom-scrollbars';
 import styled, {css} from 'styled-components';
 
-import {GlobalState} from 'mattermost-redux/types/store';
+import {GlobalState} from '@mattermost/types/store';
 
 import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
 
@@ -15,10 +15,14 @@ import {FormattedMessage} from 'react-intl';
 import {getCurrentChannelId} from 'mattermost-redux/selectors/entities/channels';
 import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
 
-import {createWikiDoc} from '../../client';
+import {createWikiDoc, deleteWikiDoc, saveWikiDoc} from '../../client';
 import {useWikiDocsCrud} from '../../hooks/wikiDocs';
 import {RHSState} from '../../types/rhs';
-import {currentRHSState} from '../../selectors';
+import {canUserUpdateWikiDoc, currentRHSState} from '../../selectors';
+
+import {PaginationRow} from '../pagination_row';
+
+import {displayWikiDocCreateModal, displayWikiDocViewModal} from '../../actions';
 
 import {
     renderThumbVertical,
@@ -29,7 +33,7 @@ import {
 } from './rhs_shared';
 
 const WelcomeBlock = styled.div`
-    padding: 4rem 3rem 2rem;
+    padding: 1rem 2rem 2rem;
     color: rgba(var(--center-channel-color-rgb), 0.72);
 `;
 
@@ -128,7 +132,7 @@ const ListSection = styled.div`
     box-shadow: 0px -1px 0px rgba(var(--center-channel-color-rgb), 0.08);
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    grid-template-rows: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-rows: repeat(auto-fill, minmax(32px, 1fr));
     position: relative;
 
     &::after {
@@ -142,6 +146,25 @@ const ListSection = styled.div`
     }
 `;
 
+const ListItem = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 0 2rem;
+    margin: 0 2.75rem;
+    box-shadow: 0px -1px 0px rgba(var(--center-channel-color-rgb), 0.08);
+
+    > div:first-of-type {
+        cursor: pointer;
+    }
+
+    > div {
+        display: flex;
+        overflow: hidden;
+        flex-direction: column;
+    }
+`;
+
 const RHSHome = () => {
     const dispatch = useDispatch();
     const rhsState = useSelector<GlobalState, RHSState>(currentRHSState);
@@ -149,10 +172,7 @@ const RHSHome = () => {
     const currentChannelId = useSelector<GlobalState, string>(getCurrentChannelId);
     const currentTeamId = useSelector<GlobalState, string>(getCurrentTeamId);
     const currentUserId = useSelector<GlobalState, string>(getCurrentUserId);
-
-    if (rhsState === RHSState.ViewingSingleWikiDoc) {
-        //return <RHSSingleWikiDoc />
-    }
+    const canEdit = useSelector<GlobalState, boolean>(canUserUpdateWikiDoc);
 
     const [
         wikiDocs,
@@ -163,33 +183,69 @@ const RHSHome = () => {
         per_page: 10,
     });
 
-    const createNew = async () => {
-        const wikiDoc = await createWikiDoc(currentChannelId, currentUserId, currentTeamId, 'New', 'test');
+    const createNew = async (name: string, description: string, status: string, content: string) => {
+        const wikiDoc = await createWikiDoc(currentChannelId, currentUserId, currentTeamId, name, description, status, content);
         fetchWikiDocs();
         console.log(wikiDoc);
     };
 
-    ///const hasWikiDocs = Boolean(wikiDocs?.length);
+    const updateWiki = async (id: string, name: string, content: string) => {
+        await saveWikiDoc({id, name, content});
+        fetchWikiDocs();
+    };
+
+    const deleteEntry = async (id: string) => {
+        await deleteWikiDoc(id);
+        fetchWikiDocs();
+    };
+
+    const hasWikiDocs = Boolean(wikiDocs?.length);
 
     let headerContent;
 
-    const has = true;
-
-    if (has) {
+    if (hasWikiDocs) {
         const list = (
             <>
                 { wikiDocs ?
-                    wikiDocs.map((wiki, index) => (
-                        <li key={'wikiList' + index}>
-                            {wiki.name}
-                        </li>
-                    )) :
-                    <li>
+                    <>
+                        <ListSection>
+                            {wikiDocs.map((wikiDoc, index) => (
+                                <ListItem key={'wikiList' + index}>
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            dispatch(displayWikiDocViewModal({wikiDoc, canEdit, updateFunc: updateWiki}));
+                                        }}
+                                    >
+                                        {wikiDoc.name}
+                                    </div>
+                                    {canEdit &&
+                                        <button
+                                            className={'icon-trash-can-outline icon-16 btn-icon'}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                deleteEntry(wikiDoc.id);
+                                            }}
+                                        />
+                                    }
+                                </ListItem>
+                            ))}
+                        </ListSection>
+                        <PaginationContainer>
+                            <PaginationRow
+                                page={params.page}
+                                perPage={params.per_page}
+                                totalCount={totalCount}
+                                setPage={setPage}
+                            />
+                        </PaginationContainer>
+                    </> :
+                    <span>
                         <FormattedMessage
                             defaultMessage='No wiki docs yet.'
                             values={{br: <br />}}
                         />
-                    </li>
+                    </span>
                 }
             </>
         );
@@ -206,26 +262,29 @@ const RHSHome = () => {
                     />
                 </WelcomeDesc>
 
-                <ul>
+                <div>
                     {list}
-                    <li>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                createNew();
-                            }}
-                        >
-                            <FormattedMessage
-                                defaultMessage='Add New'
-                                values={{br: <br />}}
-                            />
-                        </button>
-                    </li>
-                </ul>
-
-                <WelcomeWarn>
-                    <FormattedMessage defaultMessage="You don't have permission to create wiki pages in this channel." />
-                </WelcomeWarn>
+                    {canEdit ?
+                        <span>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    dispatch(displayWikiDocCreateModal({createFunc: createNew}));
+                                }}
+                            >
+                                <FormattedMessage
+                                    defaultMessage='Add New'
+                                    values={{br: <br />}}
+                                />
+                            </button>
+                        </span> :
+                        <span>
+                            <WelcomeWarn>
+                                <FormattedMessage defaultMessage="You don't have permission to create wiki pages in this channel." />
+                            </WelcomeWarn>
+                        </span>
+                    }
+                </div>
             </WelcomeBlock>
         );
     }
@@ -243,9 +302,27 @@ const RHSHome = () => {
                     />
                 </WelcomeDesc>
 
-                <WelcomeWarn>
-                    <FormattedMessage defaultMessage="There are no wiki pages to view. You don't have permission to create wiki pages in this channel." />
-                </WelcomeWarn>
+                {canEdit ?
+                    <>
+                        <WelcomeWarn>
+                            <FormattedMessage defaultMessage='There are no wiki pages to view but you can always add some.' />
+                        </WelcomeWarn>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                dispatch(displayWikiDocCreateModal({createFunc: createNew}));
+                            }}
+                        >
+                            <FormattedMessage
+                                defaultMessage='Add New'
+                                values={{br: <br />}}
+                            />
+                        </button>
+                    </> :
+                    <WelcomeWarn>
+                        <FormattedMessage defaultMessage="There are no wiki pages to view, unfortunately you don't have permission to create wiki pages in this channel." />
+                    </WelcomeWarn>
+                }
             </WelcomeBlock>
         );
     }
