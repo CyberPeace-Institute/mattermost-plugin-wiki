@@ -24,7 +24,7 @@ dist/cpi.wiki-0.1.0.tar.gz
 
 **or**
 
-### Build the plugin is through the Dockerfile:
+### Build the plugin through the Dockerfile:
 ```
 docker build -t wiki . && docker run --name mattermost-wiki wiki
 docker cp mattermost-wiki:/app/dist/cpi.wiki-0.1.0.tar.gz .
